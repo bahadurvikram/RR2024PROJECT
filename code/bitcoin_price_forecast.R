@@ -169,18 +169,21 @@ print(results_2000)
 ######## Table 2 details start from here
 ########
 arima_model_500 <- Arima(log_transformed_500$Close, order=ARIMA_MODEL_410)
-summary(arima_model_500) # Training Sample performance, Need to put in result
+performance_500 <- data.frame()
+performance_500 <- performance_data(performance_500,"ARIMA (4,1,0)", "01/01/2012~14/05/2013", accuracy(arima_model_500))
 
 arima_model_2000 <- Arima(log_transformed_2000$Close, order=ARIMA_MODEL_411)
-summary(arima_model_2000) # Training Sample performance, Need to put in result
+performance_2000 <- data.frame()
+performance_2000 <- performance_data(performance_2000,"ARIMA (4,1,1)", "01/01/2012~25/06/2017", accuracy(arima_model_2000))
 
 # Fit NNAR model (specify orders explicitly)
 nnar_model_500 <- nnetar(log_transformed_500$Close, p=NNAR_21[1], P=NNAR_21[2], size=2)
-accuracy(nnar_model_500)
+performance_500 <- performance_data(performance_500,"NNAR (2,1)", "01/01/2012~14/05/2013", accuracy(nnar_model_500))
+print(performance_500)
 
 nnar_model_2000 <- nnetar(log_transformed_2000$Close, p=NNAR_12[1], P=NNAR_12[2], size=2)
-accuracy(nnar_model_2000)
-
+performance_2000 <- performance_data(performance_2000,"NNAR (1,2)", "01/01/2012~25/06/2017", accuracy(nnar_model_2000))
+print(performance_2000)
 ######## Table 2 details end here
 
 ######## Table 3 details start here
@@ -211,11 +214,19 @@ ggplot(data = df_1966_days_forecasted, aes(x = date), type='h') +
   labs(title="Plot of different models, where training size is 500 days and test window is 1966 days\nAll are in log normal (Zoomed Version)",
        x ="", y = "")
 
-accuracy(df_1966_days_forecasted$arima_without_reestimation, log(quotes_bitcoin))
-accuracy(df_1966_days_forecasted$nnar_without_reestimation, log(quotes_bitcoin))
+performance_1996_without <- data.frame()
+performance_1996_without <- performance_data(performance_1996_without,"ARIMA (4,1,0)", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$arima_without_reestimation, log(quotes_bitcoin)))
+performance_1996_without <- performance_data(performance_1996_without,"NNAR (2,1)", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$nnar_without_reestimation, log(quotes_bitcoin)))
+print(performance_1996_without)
 
-accuracy(df_1966_days_forecasted$arima_with_reestimation, log(quotes_bitcoin))
-accuracy(df_1966_days_forecasted$nnar_with_reestimation, log(quotes_bitcoin))
+
+
+
+performance_1996_with <- data.frame()
+performance_1996_with <- performance_data(performance_1996_with,"ARIMA", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$arima_with_reestimation, log(quotes_bitcoin)))
+performance_1996_with <- performance_data(performance_1996_with,"NNAR", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$nnar_with_reestimation, log(quotes_bitcoin)))
+print(performance_1996_with)
+
 
 ggplot(data = df_466_days_forecasted, aes(x = date), type='h') +
   geom_line(mapping = (aes(y = Close, color = "close"))) + 
@@ -240,30 +251,50 @@ ggplot(data = df_466_days_forecasted, aes(x = date), type='h') +
   labs(title="Plot of different models, where training size is 2000 days and test window is 466 days\nAll are in log normal (Zoomed Version)",
        x ="", y = "")
 
-accuracy(df_466_days_forecasted$arima_without_reestimation, log(quotes_bitcoin))
-accuracy(df_466_days_forecasted$nnar_without_reestimation, log(quotes_bitcoin))
 
-accuracy(df_466_days_forecasted$arima_with_reestimation, log(quotes_bitcoin))
-accuracy(df_466_days_forecasted$nnar_with_reestimation, log(quotes_bitcoin))
+performance_466_without <- data.frame()
+performance_466_without <- performance_data(performance_466_without,"ARIMA (4,1,1)", "26/06/2017~04/10/2018", accuracy(df_466_days_forecasted$arima_without_reestimation, log(quotes_bitcoin)))
+performance_466_without <- performance_data(performance_466_without,"NNAR (1,2)", "26/06/2017~04/10/2018", accuracy(df_466_days_forecasted$nnar_without_reestimation, log(quotes_bitcoin)))
+print(performance_466_without)
+
+performance_466_with <- data.frame()
+performance_466_with <- performance_data(performance_466_with,"ARIMA (4,1,1)", "26/06/2017~04/10/2018", accuracy(df_466_days_forecasted$arima_with_reestimation, log(quotes_bitcoin)))
+performance_466_with <- performance_data(performance_466_with,"NNAR (1,2)", "26/06/2017~04/10/2018", accuracy(df_466_days_forecasted$nnar_with_reestimation, log(quotes_bitcoin)))
+print(performance_466_with)
 
 
 ######## Table 3 details end here
 
 ######## Table 4 details start from here
 #First test-sample window (1966 days)
+perf_compared_1966 <- data.frame()
 dm_result_arima_nnar_reestimated_1966 <- dm.test(df_1966_days_forecasted$arima_with_reestimation, df_1966_days_forecasted$nnar_with_reestimation, alternative = "two.sided", h = 1, power = 2)
-print(dm_result_arima_nnar_reestimated_1966)
+perf_compared_1966 <- performance_compared_data(perf_compared_1966, "ARIMA vs. NNAR (re-estimation)", dm_result_arima_nnar_reestimated_1966)
 
 dm_result_arima_nnar_without_reestimated_1966 <- dm.test(df_1966_days_forecasted$arima_without_reestimation, df_1966_days_forecasted$nnar_without_reestimation, alternative = "two.sided", h = 1, power = 2)
-print(dm_result_arima_nnar_without_reestimated_1966)
+perf_compared_1966 <- performance_compared_data(perf_compared_1966, "ARIMA vs. NNAR (without re-estimation)", dm_result_arima_nnar_without_reestimated_1966)
 
 dm_result_arima_with_without_reestimated_1966 <- dm.test(df_1966_days_forecasted$arima_with_reestimation, df_1966_days_forecasted$arima_without_reestimation, alternative = "two.sided", h = 1, power = 2)
-print(dm_result_arima_with_without_reestimated_1966)
+perf_compared_1966 <- performance_compared_data(perf_compared_1966, "ARIMA (re-estimation) vs. ARIMA (without re-estimation)", dm_result_arima_with_without_reestimated_1966)
 
 dm_result_nnar_with_without_reestimated_1966 <- dm.test(df_1966_days_forecasted$nnar_with_reestimation, df_1966_days_forecasted$nnar_without_reestimation, alternative = "two.sided", h = 1, power = 2)
-print(dm_result_nnar_with_without_reestimated_1966)
+perf_compared_1966 <- performance_compared_data(perf_compared_1966, "NNAR (re-estimation) vs. NNAR (without re-estimation)", dm_result_nnar_with_without_reestimated_1966)
+print(perf_compared_1966)
 
 #Second test-sample window (466 days)
+perf_compared_466 <- data.frame()
+dm_result_arima_nnar_reestimated_466 <- dm.test(df_466_days_forecasted$arima_with_reestimation, df_466_days_forecasted$nnar_with_reestimation, alternative = "two.sided", h = 1, power = 2)
+perf_compared_466 <- performance_compared_data(perf_compared_466, "ARIMA vs. NNAR (re-estimation)", dm_result_arima_nnar_reestimated_466)
+
+dm_result_arima_nnar_without_reestimated_466 <- dm.test(df_466_days_forecasted$arima_without_reestimation, df_466_days_forecasted$nnar_without_reestimation, alternative = "two.sided", h = 1, power = 2)
+perf_compared_466 <- performance_compared_data(perf_compared_466, "ARIMA vs. NNAR (without re-estimation)", dm_result_arima_nnar_without_reestimated_466)
+
+dm_result_arima_with_without_reestimated_466 <- dm.test(df_466_days_forecasted$arima_with_reestimation, df_466_days_forecasted$arima_without_reestimation, alternative = "two.sided", h = 1, power = 2)
+perf_compared_466 <- performance_compared_data(perf_compared_466, "ARIMA (re-estimation) vs. ARIMA (without re-estimation)", dm_result_arima_with_without_reestimated_466)
+
+dm_result_nnar_with_without_reestimated_466 <- dm.test(df_466_days_forecasted$nnar_with_reestimation, df_466_days_forecasted$nnar_without_reestimation, alternative = "two.sided", h = 1, power = 2)
+perf_compared_466 <- performance_compared_data(perf_compared_466, "NNAR (re-estimation) vs. NNAR (without re-estimation)", dm_result_nnar_with_without_reestimated_466)
+print(perf_compared_466)
 ######## Table 4 details end here
 
 options(scipen=999)
@@ -276,16 +307,7 @@ plot.ts(et410)
 Box.test(et410, lag = 8, type = c("Box-Pierce", "Ljung-Box"), fitdf = 4)
 gghistogram(et410)
 
-
-modelarima410 = arima(log_transformed_500, order = ARIMA_MODEL_410)
-pacf(first_diff_log_operator_500)
-et410 = residuals(modelarima410)
-acf(et410)
-plot.ts(et410)
-Box.test(et410, lag = 8, type = c("Box-Pierce", "Ljung-Box"), fitdf = 4)
-gghistogram(et410)
-
-modelarima411 = arima(log_transformed_500, order = ARIMA_MODEL_411)
+modelarima411 = arima(log_transformed_2000, order = ARIMA_MODEL_411)
 pacf(first_diff_log_operator_2000)
 et411 = residuals(modelarima411)
 acf(et411)

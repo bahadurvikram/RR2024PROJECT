@@ -31,13 +31,15 @@ options(scipen = 10)
 ## Required libraries
 
 ```{r cache = F}
-library(tidyverse)
-library(xts)
-library(lmtest)
-library(tseries)
-library(urca)
-library(fUnitRoots)
+llibrary(xts)
 library(quantmod)
+library(ggthemes)
+library(dygraphs)
+library(tidyverse)
+library(urca)
+library(tseries)
+library(forecast)
+library(dplyr)
 ```
 
 ```{r echo=FALSE}
@@ -45,71 +47,61 @@ library(quantmod)
 #LOC_CODE = dirname(rstudioapi::getSourceEditorContext()$path) ## Quarto
 ## Set it to working direcotry
 #setwd(LOC_CODE)
+source("../code/config.R")
+source("../code/model_executor.R")
 ```
 
 ## Read bitcoin csv daily price
 
 ```{r}
-quotes_bitcoin <- read_csv("../data/Bitcoin_01_01_2012-04_10_2018_historical_data_coinmarketcap.csv", 
-                           col_select = c(timeOpen,close))
+quotes_bitcoin <- read_csv("../data/Bitcoindata.csv", 
+                           col_select = c(Date,Close))
 ```
 
-We can examine structure of the resulting object:
-
+## We can examine structure of the resulting object:
 ```{r}
 head(quotes_bitcoin)
 tail(quotes_bitcoin)
 glimpse(quotes_bitcoin)
 ```
 
-Let's also check the class of the Date column:
-
+## Let’s also check the class of the Date column:
 ```{r}
-class(quotes_bitcoin$timeOpen)
+class(quotes_bitcoin$Close)
 ```
-
-lets check structure of the whole dataset
-
+## lets check structure of the whole dataset
 ```{r}
 str(quotes_bitcoin)
 ```
-
-Let's transform timeOpen into date:
-
+##Let's transform timeOpen into date:
 ```{r}
-quotes_bitcoin$timeOpen <- as.Date(quotes_bitcoin$timeOpen, format = "%Y-%m-%d")
+quotes_bitcoin$Date <- as.Date(quotes_bitcoin$Date, format = "%d/%m/%Y")
 ```
-
-We have to give the format in which date is originally stored: \* %y means 2-digit year, \* %Y means 4-digit year \* %m means a month \* %d means a day
-
+## We have to give the format in which date is originally stored: * %y means 2-digit year, * %Y means 4-digit year * %m means a month * %d means a day
 ```{r}
-class(quotes_bitcoin$timeOpen)
+class(quotes_bitcoin$Date)
 head(quotes_bitcoin)
 glimpse(quotes_bitcoin)
 ```
+# Now R understands this column as dates
 
-Now R understands this column as dates
 
-Creating xts objects
-
+## Creating xts objects
 ```{r}
 quotes_bitcoin <- 
   xts(quotes_bitcoin[, -1], # data columns (without the first column with date)
-      quotes_bitcoin$timeOpen)  # date/time index
-
+      quotes_bitcoin$Date)  # date/time index
 ```
-
-Lets see the result:
-
+# Lets see the result:
 ```{r}
 head(quotes_bitcoin)
 str(quotes_bitcoin)
 ```
 
-Finally, let's use the ggplot2 package to produce nice visualization. \## The ggplot2 package expects data to be in long format, rather than wide format. \## Hence, first we have to convert the tibble to a long tibble:## Plotting Actual Bitcoin Price
-
-## Data
-
+## Finally, let’s use the ggplot2 package to produce nice visualization. 
+## The ggplot2 package expects data to be in long format, rather than wide format. 
+## Hence, first we have to convert the tibble to a long tibble:
+## Plotting Actual Bitcoin Price
 ```{r}
 tibble(df = quotes_bitcoin) %>%
   ggplot(aes(zoo::index(quotes_bitcoin), df)) +
@@ -125,8 +117,7 @@ tibble(df = quotes_bitcoin) %>%
   )
 ```
 
-Plotting Log Transformed Bitcoin Price
-
+## Plotting Log Transformed Bitcoin Price
 ```{r}
 tibble(df = quotes_bitcoin) %>%
   ggplot(aes(zoo::index(quotes_bitcoin), log(quotes_bitcoin))) +
@@ -141,9 +132,7 @@ tibble(df = quotes_bitcoin) %>%
     y=""
   )
 ```
-
-Plotting 1st Difference Log Operator
-
+## Plotting 1st Difference Log Operator
 ```{r}
 tibble(df = quotes_bitcoin) %>%
   ggplot(aes(zoo::index(quotes_bitcoin), periodReturn(quotes_bitcoin, period="daily", type="log"))) +
@@ -158,3 +147,16 @@ tibble(df = quotes_bitcoin) %>%
     y=""
   )
 ```
+```{r echo=FALSE}
+selectIndex500 <- (zoo::index(quotes_bitcoin) <= as.Date(FIRST_TRAINING_END_DATE,YYY_MM_DD))
+
+#original_500 <- window(ausbeer, start=1995)
+
+original_500 <- quotes_bitcoin[selectIndex500,]
+log_transformed <- log(quotes_bitcoin)
+log_transformed_500 <- log_transformed[selectIndex500,]
+first_diff_log_operator_500 <- periodReturn(original_500, period="daily", type="log")
+```
+########
+#Table 1. Stationary test of data start here
+########

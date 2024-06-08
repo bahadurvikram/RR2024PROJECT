@@ -20,6 +20,7 @@ print(LOC_CODE)
 ## Set it to working direcotry
 setwd(LOC_CODE)
 source("config.R")
+source("utils.R")
 source("model_executor.R")
 
 ## Read bitcoin csv daily price
@@ -107,9 +108,6 @@ tibble(df = quotes_bitcoin) %>%
     y=""
   )
 
-
-
-
 selectIndex500 <- (zoo::index(quotes_bitcoin) <= as.Date(FIRST_TRAINING_END_DATE,YYY_MM_DD))
 
 #original_500 <- window(ausbeer, start=1995)
@@ -122,21 +120,26 @@ first_diff_log_operator_500 <- periodReturn(original_500, period="daily", type="
 ########
 #Table 1. Stationary test of data start here
 ########
-adf.original_500 <- adf.test(original_500)  
+
+adf.original_500 <- adf.test(original_500)
 pp.original_500 <- pp.test(original_500)
-print(adf.original_500)
-print(pp.original_500)
+
+results_500 <- data.frame()
+results_500 <- stationary_test_data(results_500, "Original data", "01/01/2012~14/05/2013", adf.original_500, pp.original_500)
+
 adf.log_transformed_500 <- adf.test(log_transformed_500)  
 pp.log_transformed_500 <- pp.test(log_transformed_500)  
-print(adf.log_transformed_500)
-print(pp.log_transformed_500)
+
+results_500 <- stationary_test_data(results_500, "Log transformed data", "01/01/2012~14/05/2013", adf.log_transformed_500, pp.log_transformed_500)
+
 adf.first_diff_log_operator_500 <- adf.test(first_diff_log_operator_500)  
 pp.first_diff_log_operator_500 <- pp.test(first_diff_log_operator_500)  
-print(adf.first_diff_log_operator_500)
-print(pp.first_diff_log_operator_500)
+
+results_500 <- stationary_test_data(results_500, "1st difference log operator", "01/01/2012~14/05/2013", adf.first_diff_log_operator_500, pp.first_diff_log_operator_500)
+
+print(results_500)
 
 selectIndex2000 <- (zoo::index(quotes_bitcoin) <= as.Date(SECOND_TRAINING_END_DATE,YYY_MM_DD))
-
 
 original_2000 <- quotes_bitcoin[selectIndex2000,]
 log_transformed_2000 <- log(original_2000)
@@ -144,16 +147,20 @@ first_diff_log_operator_2000 <- periodReturn(original_2000, period="daily", type
 
 adf.original_2000 <- adf.test(original_2000)
 pp.original_2000 <- pp.test(original_2000)
-print(adf.original_2000)
-print(pp.original_2000)
+results_2000 <- data.frame()
+results_2000 <- stationary_test_data(results_2000, "Original data", "01/01/2012~25/06/2017", adf.original_2000, pp.original_2000)
+
 adf.log_transformed_2000 <- adf.test(log_transformed_2000)
 pp.log_transformed_2000 <- pp.test(log_transformed_2000)
-print(adf.log_transformed_2000)
-print(pp.log_transformed_2000)
+results_2000 <- stationary_test_data(results_2000, "Log transformed data", "01/01/2012~25/06/2017", adf.log_transformed_2000, pp.log_transformed_2000)
+
+
 adf.first_diff_log_operator_2000 <- adf.test(first_diff_log_operator_2000)
 pp.first_diff_log_operator_2000 <- pp.test(first_diff_log_operator_2000)
-print(adf.first_diff_log_operator_2000)
-print(pp.first_diff_log_operator_2000)
+results_2000 <- stationary_test_data(results_2000, "1st difference log operator", "01/01/2012~25/06/2017", adf.first_diff_log_operator_2000, pp.first_diff_log_operator_2000)
+
+print(results_2000)
+
 #Table 1. Stationary test of data end here
 
 # auto.arima(original_500) #Result is ARIMA(4,1,4) 

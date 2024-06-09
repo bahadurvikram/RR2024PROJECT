@@ -1,10 +1,13 @@
 ---
 title: "Next-Day Bitcoin Price Forecast"
 author: "Nihad & Vikram"
-editor: visual
 date: "`r Sys.Date()`"
 format: 
   html:
+    page-layout: full
+    code-fold: true
+    fig-width: 15
+    fig-height: 6
     df-print: kable
     toc: true
     toc-depth: 2
@@ -16,6 +19,7 @@ format:
     lot: true
     theme: spacelab
     highlight: tango
+    code-link: true
     toc_float:
       collapsed: false
       smooth_scroll: true
@@ -29,7 +33,15 @@ knitr::opts_chunk$set(echo    = TRUE,
 options(scipen = 10)
 ```
 
-## Required libraries
+# Requirement
+
+Abstract: This study analyzes forecasts of Bitcoin price using the autoregressive integrated moving average (ARIMA) and neural network autoregression (NNAR) models. Employing the static forecast approach, we forecast next-day Bitcoin price both with and without re-estimation of the forecast model for each step. For cross-validation of forecast results, we consider two different training and test samples. In the first training-sample, NNAR performs better than ARIMA, while ARIMA outperforms NNAR in the second training-sample. Additionally, ARIMA with model re-estimation at each step outperforms NNAR in the two test-sample forecast periods. The Diebold Mariano test confirms the superiority of forecast results of ARIMA model over NNAR in the test-sample periods. Forecast performance of ARIMA models with and without re-estimation are identical for the estimated test-sample periods. Despite the sophistication of NNAR, this paper demonstrates ARIMA enduring power of volatile Bitcoin price prediction.
+
+**Keywords**: ARIMA; artificial neural network; Bitcoin; cryptocurrency; static forecast
+
+# Code setup
+
+**Required libraries**
 
 ```{r cache = F}
 library(xts)
@@ -43,67 +55,78 @@ library(forecast)
 library(dplyr)
 ```
 
-```{r echo=FALSE}
-## Get this script present location
-#LOC_CODE = dirname(rstudioapi::getSourceEditorContext()$path) ## Quarto
-## Set it to working direcotry
-#setwd(LOC_CODE)
+**Required sub source files**
+
+```{r}
 source("../code/config.R")
 source("../code/utils.R")
 source("../code/model_executor.R")
 ```
 
-## Read bitcoin csv daily price
+**Read bitcoin csv daily price**
 
 ```{r}
 quotes_bitcoin <- read_csv("../data/Bitcoindata.csv", 
                            col_select = c(Date,Close))
 ```
 
-## We can examine structure of the resulting object:
+**We can examine structure of the resulting object:**
+
 ```{r}
 head(quotes_bitcoin)
 tail(quotes_bitcoin)
 glimpse(quotes_bitcoin)
 ```
 
-## Let’s also check the class of the Date column:
+**Let's also check the class of the Date column:**
+
 ```{r}
 class(quotes_bitcoin$Close)
 ```
-## lets check structure of the whole dataset
+
+**lets check structure of the whole dataset**
+
 ```{r}
 str(quotes_bitcoin)
 ```
-##Let's transform column 'Date' into type date:
+
+**Let's transform column 'Date' into type date:**
+
 ```{r}
 quotes_bitcoin$Date <- as.Date(quotes_bitcoin$Date, format = "%d/%m/%Y")
 ```
-## We have to give the format in which date is originally stored: * %y means 2-digit year, * %Y means 4-digit year * %m means a month * %d means a day
+
+We have to give the format in which date is originally stored: \* %y means 2-digit year, \* %Y means 4-digit year \* %m means a month \* %d means a day
+
 ```{r}
 class(quotes_bitcoin$Date)
 head(quotes_bitcoin)
 glimpse(quotes_bitcoin)
 ```
-# Now R understands this column as dates
 
+Now R understands this column as dates
 
-## Creating xts objects
+**Creating xts objects**
+
 ```{r}
 quotes_bitcoin <- 
   xts(quotes_bitcoin[, -1], # data columns (without the first column with date)
       quotes_bitcoin$Date)  # date/time index
 ```
-# Lets see the result:
+
+*Lets see the result:*
+
 ```{r}
 head(quotes_bitcoin)
 str(quotes_bitcoin)
 ```
 
-## Finally, let’s use the ggplot2 package to produce nice visualization. 
-## The ggplot2 package expects data to be in long format, rather than wide format. 
-## Hence, first we have to convert the tibble to a long tibble:
-## Plotting Actual Bitcoin Price
+# Basic graphs
+
+Finally, let's use the ggplot2 package to produce nice visualization. The ggplot2 package expects data to be in long format, rather than wide format. Hence, first we have to convert the tibble to a long tibble:
+
+### Plotting Actual Bitcoin Price
+
 ```{r}
 tibble(df = quotes_bitcoin) %>%
   ggplot(aes(zoo::index(quotes_bitcoin), df)) +
@@ -119,7 +142,8 @@ tibble(df = quotes_bitcoin) %>%
   )
 ```
 
-## Plotting Log Transformed Bitcoin Price
+### Plotting Log Transformed Bitcoin Price
+
 ```{r}
 tibble(df = quotes_bitcoin) %>%
   ggplot(aes(zoo::index(quotes_bitcoin), log(quotes_bitcoin))) +
@@ -134,7 +158,9 @@ tibble(df = quotes_bitcoin) %>%
     y=""
   )
 ```
-## Plotting 1st Difference Log Operator
+
+### Plotting 1st Difference Log Operator
+
 ```{r}
 tibble(df = quotes_bitcoin) %>%
   ggplot(aes(zoo::index(quotes_bitcoin), periodReturn(quotes_bitcoin, period="daily", type="log"))) +
@@ -149,6 +175,7 @@ tibble(df = quotes_bitcoin) %>%
     y=""
   )
 ```
+
 ```{r echo=FALSE}
 selectIndex500 <- (zoo::index(quotes_bitcoin) <= as.Date(FIRST_TRAINING_END_DATE,YYY_MM_DD))
 
@@ -160,7 +187,8 @@ log_transformed_500 <- log_transformed[selectIndex500,]
 first_diff_log_operator_500 <- periodReturn(original_500, period="daily", type="log")
 ```
 
-#*Table 1.* Stationary test of data.
+# Table 1. Stationary test of data.
+
 ```{r echo=FALSE}
 adf.original_500 <- adf.test(original_500)
 pp.original_500 <- pp.test(original_500)
@@ -199,17 +227,23 @@ pp.first_diff_log_operator_2000 <- pp.test(first_diff_log_operator_2000)
 results_2000 <- stationary_test_data(results_2000, "1st difference log operator", "01/01/2012~25/06/2017", adf.first_diff_log_operator_2000, pp.first_diff_log_operator_2000)
 
 ```
-## First in-sample window (500 days)
+
+### First in-sample window (500 days)
+
 ```{r echo=FALSE}
 results_500 |> head()
 ```
-## Second in-sample window (2000 days)
+
+### Second in-sample window (2000 days)
+
 ```{r echo=FALSE}
 results_2000
 ```
-ADF. Augmented Dicky-Fuller test; PP. Phillips-Perron test. p-values in parenthesis, p-value less than 0.05 confirms stationary
 
-#Table 2. Training-sample forecast performance.
+*ADF. Augmented Dicky-Fuller test; PP. Phillips-Perron test. p-values in parenthesis, p-value less than 0.05 confirms stationary*
+
+# Table 2. Training-sample forecast performance.
+
 ```{r echo=FALSE}
 arima_model_500 <- Arima(log_transformed_500$Close, order=ARIMA_MODEL_410)
 performance_500 <- data.frame()
@@ -226,16 +260,24 @@ performance_500 <- performance_data(performance_500,"NNAR (2,1)", "01/01/2012~14
 nnar_model_2000 <- nnetar(log_transformed_2000$Close, p=NNAR_12[1], P=NNAR_12[2], size=2)
 performance_2000 <- performance_data(performance_2000,"NNAR (1,2)", "01/01/2012~25/06/2017", accuracy(nnar_model_2000))
 ```
-## First training-sample window (500 days)
+
+### First training-sample window (500 days)
+
 ```{r echo=FALSE}
 performance_500
 ```
-## Second training-sample window (2000 days)
+
+### Second training-sample window (2000 days)
+
 ```{r echo=FALSE}
+#| fig-width: 10
+#| fig-height: 5
 performance_2000
 ```
-#(a) Actual and forecasted Bitcoin price (training sample:500 days, test-sample:1966 days)
-``` {r echo=FALSE}
+
+## (a) Actual and forecasted Bitcoin price (training sample:500 days, test-sample:1966 days)
+
+```{r echo=FALSE}
 df_1966_days_forecasted <- model_executor(quotes_bitcoin, log_transformed_500, ARIMA_MODEL_410, NNAR_21, TRUE)
 
 df_466_days_forecasted <- model_executor(quotes_bitcoin, log_transformed_2000, ARIMA_MODEL_411, NNAR_12, TRUE)
@@ -249,9 +291,11 @@ ggplot(data = df_1966_days_forecasted, aes(x = date), type='h') +
         geom_vline(xintercept = as.Date(FIRST_TESTING_START_DATE), color = "gray", size=1, linetype="dashed") + 
         scale_x_date(date_labels = YYY_MM_DD, date_breaks = "1 year") +
         labs(title="Plot of different models, where training size is 500 days and test window is 1966 days\nAll are in log normal",
-        x ="", y = "")
+        x ="", y = "") + theme(legend.position = "bottom")
 ```
-#(b) Concentrated view on the forecast period (test-sample:1966 days)
+
+## (b) Concentrated view on the forecast period (test-sample:1966 days)
+
 ```{r echo=FALSE}
 ggplot(data = df_1966_days_forecasted, aes(x = date), type='h') +
   geom_line(mapping = (aes(y = Close, color = "close"))) + 
@@ -263,14 +307,16 @@ ggplot(data = df_1966_days_forecasted, aes(x = date), type='h') +
   scale_x_date(date_labels = YYY_MM_DD, date_breaks = "1 year") +
   coord_cartesian(xlim=c(as.Date(FIRST_TESTING_START_DATE), as.Date(DATA_SET_END_DATE))) +
   labs(title="Plot of different models, where training size is 500 days and test window is 1966 days\nAll are in log normal (Zoomed Version)",
-       x ="", y = "")
+       x ="", y = "") + theme(legend.position = "bottom")
 
 performance_1996_without <- data.frame()
 performance_1996_without <- performance_data(performance_1996_without,"ARIMA (4,1,0)", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$arima_without_reestimation, log(quotes_bitcoin)))
 performance_1996_without <- performance_data(performance_1996_without,"NNAR (2,1)", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$nnar_without_reestimation, log(quotes_bitcoin)))
 
 ```
-#(c) Actual and forecasted Bitcoin price (training sample:2000 days, test-sample:466 days)
+
+### (c) Actual and forecasted Bitcoin price (training sample:2000 days, test-sample:466 days)
+
 ```{r echo=FALSE}
 performance_1996_with <- data.frame()
 performance_1996_with <- performance_data(performance_1996_with,"ARIMA", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$arima_with_reestimation, log(quotes_bitcoin)))
@@ -285,9 +331,11 @@ ggplot(data = df_466_days_forecasted, aes(x = date), type='h') +
   geom_vline(xintercept = as.Date(SECOND_TESTING_START_DATE), color = "gray", size=1, linetype="dashed") +
   scale_x_date(date_labels = YYY_MM_DD, date_breaks = "1 year") +
   labs(title="Plot of different models, where training size is 2000 days and test window is 466 days\nAll are in log normal",
-       x ="", y = "")
+       x ="", y = "") + theme(legend.position = "bottom")
 ```
-#(d) Concentrated view on the forecast period (test-sample:466 days)
+
+### (d) Concentrated view on the forecast period (test-sample:466 days)
+
 ```{r echo=FALSE}
 ggplot(data = df_466_days_forecasted, aes(x = date), type='h') +
   geom_line(mapping = (aes(y = Close, color = "close"))) + 
@@ -299,7 +347,7 @@ ggplot(data = df_466_days_forecasted, aes(x = date), type='h') +
   scale_x_date(date_labels = YYY_MM_DD, date_breaks = "3 months") +
   coord_cartesian(xlim=c(as.Date(SECOND_TESTING_START_DATE), as.Date(DATA_SET_END_DATE))) +
   labs(title="Plot of different models, where training size is 2000 days and test window is 466 days\nAll are in log normal (Zoomed Version)",
-       x ="", y = "")
+       x ="", y = "") + theme(legend.position = "bottom")
 
 
 performance_466_without <- data.frame()
@@ -312,26 +360,34 @@ performance_466_with <- performance_data(performance_466_with,"ARIMA (4,1,1)", "
 performance_466_with <- performance_data(performance_466_with,"NNAR (1,2)", "26/06/2017~04/10/2018", accuracy(df_466_days_forecasted$nnar_with_reestimation, log(quotes_bitcoin)))
 
 ```
-## Table 3. Test-sample static forecast performance.
-First test-sample window (1966 days)
-Forecast without re-estimation at each step
+
+# Table 3. Test-sample static forecast performance.
+
+### First test-sample window (1966 days) Forecast without re-estimation at each step
+
 ```{r echo=FALSE}
 performance_1996_without
 ```
-Forecast with re-estimation at each step
+
+#### Forecast with re-estimation at each step
+
 ```{r echo=FALSE}
 performance_1996_with
 ```
-Second test-sample window (466 days)
-Forecast without re-estimation at each step
+
+### Second test-sample window (466 days) Forecast without re-estimation at each step
+
 ```{r echo=FALSE}
 performance_466_without
 ```
-Forecast with re-estimation at each step
+
+#### Forecast with re-estimation at each step
+
 ```{r echo=FALSE}
 performance_466_with
 ######## Table 3 details end here
 ```
+
 ```{r echo=FALSE}
 # Table for preparation start here
 perf_compared_1966 <- data.frame()
@@ -348,15 +404,21 @@ dm_result_nnar_with_without_reestimated_1966 <- dm.test(df_1966_days_forecasted$
 perf_compared_1966 <- performance_compared_data(perf_compared_1966, "NNAR (re-estimation) vs. NNAR (without re-estimation)", dm_result_nnar_with_without_reestimated_1966)
 
 ```
+
 # Table 4. DM test of forecast results.
-#First test-sample window (1966 days)
+
+### First test-sample window (1966 days)
+
 ```{r echo=FALSE}
 perf_compared_1966
 ```
+
 ```{r echo=FALSE}
 ######## Table 4 details end here
 ```
-#Second test-sample window (466 days)
+
+### Second test-sample window (466 days)
+
 ```{r echo=FALSE}
 #perf_compared_466
 perf_compared_466 <- data.frame()
@@ -373,9 +435,11 @@ dm_result_nnar_with_without_reestimated_466 <- dm.test(df_466_days_forecasted$nn
 perf_compared_466 <- performance_compared_data(perf_compared_466, "NNAR (re-estimation) vs. NNAR (without re-estimation)", dm_result_nnar_with_without_reestimated_466)
 perf_compared_466
 ```
-p < 0.05 indicates that forecast results of the first method is better than the second method.
 
-#Ljung-Box testing for used ARIMA models
+*p \< 0.05 indicates that forecast results of the first method is better than the second method.*
+
+### Ljung-Box testing for used ARIMA models
+
 ```{r echo=FALSE}
 modelarima410 = arima(log_transformed_500, order = ARIMA_MODEL_410)
 pacf(first_diff_log_operator_500)
@@ -393,7 +457,9 @@ plot.ts(et411)
 Box.test(et411, lag = 8, type = c("Box-Pierce", "Ljung-Box"), fitdf = 5)
 gghistogram(et411)
 ```
-#Proposed improved solution for ARIMA models (6,1,1) for 500 training data set
+
+### Proposed improved solution for ARIMA models (6,1,1) for 500 training data set
+
 ```{r echo=FALSE}
 modelarima611 = arima(log_transformed_500, order = c(6,1,1))
 pacf(first_diff_log_operator_500)
@@ -404,7 +470,9 @@ Box.test(et611, lag = 10, type = c("Box-Pierce", "Ljung-Box"), fitdf = 7)
 gghistogram(et611)
 accuracy(modelarima611)
 ```
-#Proposed improved solution for ARIMA models (6,1,1) for 500 training data set
+
+### Proposed improved solution for ARIMA models (5,1,1) for 2000 training data set
+
 ```{r echo=FALSE}
 modelarima510 = arima(log_transformed_2000, order = c(5,1,0))
 pacf(first_diff_log_operator_2000)

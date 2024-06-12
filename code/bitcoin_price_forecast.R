@@ -16,7 +16,7 @@ rm(list = ls())
 ## Get this script present location
 LOC_CODE = dirname(rstudioapi::getSourceEditorContext()$path)
 
-print(LOC_CODE)
+#print(LOC_CODE)
 ## Set it to working direcotry
 setwd(LOC_CODE)
 source("config.R")
@@ -77,7 +77,9 @@ tibble(df = quotes_bitcoin) %>%
     caption = "source: RR 2024",
     x="",
     y=""
-  )
+  )+
+  theme_gdocs() +
+  theme(panel.background = element_rect(fill = "transparent",color = 4,size = 2))
 
 
 ## Plotting Log Transformed Bitcoin Price
@@ -85,6 +87,7 @@ tibble(df = quotes_bitcoin) %>%
   ggplot(aes(zoo::index(quotes_bitcoin), log(quotes_bitcoin))) +
   geom_line() +
   theme_bw() +
+  theme(panel.background = element_rect(fill = "#67c9ff"))
   scale_x_date(date_breaks = "1 year", date_labels = "%b-%Y")+
   labs(
     title = "Log Transformed Bitcoin Price",
@@ -137,7 +140,7 @@ pp.first_diff_log_operator_500 <- pp.test(first_diff_log_operator_500)
 
 results_500 <- stationary_test_data(results_500, "1st difference log operator", "01/01/2012~14/05/2013", adf.first_diff_log_operator_500, pp.first_diff_log_operator_500)
 
-print(results_500)
+#print(results_500)
 
 selectIndex2000 <- (zoo::index(quotes_bitcoin) <= as.Date(SECOND_TRAINING_END_DATE,YYY_MM_DD))
 
@@ -159,7 +162,7 @@ adf.first_diff_log_operator_2000 <- adf.test(first_diff_log_operator_2000)
 pp.first_diff_log_operator_2000 <- pp.test(first_diff_log_operator_2000)
 results_2000 <- stationary_test_data(results_2000, "1st difference log operator", "01/01/2012~25/06/2017", adf.first_diff_log_operator_2000, pp.first_diff_log_operator_2000)
 
-print(results_2000)
+#print(results_2000)
 
 #Table 1. Stationary test of data end here
 
@@ -179,11 +182,11 @@ performance_2000 <- performance_data(performance_2000,"ARIMA (4,1,1)", "01/01/20
 # Fit NNAR model (specify orders explicitly)
 nnar_model_500 <- nnetar(log_transformed_500$Close, p=NNAR_21[1], P=NNAR_21[2], size=2)
 performance_500 <- performance_data(performance_500,"NNAR (2,1)", "01/01/2012~14/05/2013", accuracy(nnar_model_500))
-print(performance_500)
+#print(performance_500)
 
 nnar_model_2000 <- nnetar(log_transformed_2000$Close, p=NNAR_12[1], P=NNAR_12[2], size=2)
 performance_2000 <- performance_data(performance_2000,"NNAR (1,2)", "01/01/2012~25/06/2017", accuracy(nnar_model_2000))
-print(performance_2000)
+#print(performance_2000)
 ######## Table 2 details end here
 
 ######## Table 3 details start here
@@ -217,7 +220,7 @@ ggplot(data = df_1966_days_forecasted, aes(x = date), type='h') +
 performance_1996_without <- data.frame()
 performance_1996_without <- performance_data(performance_1996_without,"ARIMA (4,1,0)", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$arima_without_reestimation, log(quotes_bitcoin)))
 performance_1996_without <- performance_data(performance_1996_without,"NNAR (2,1)", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$nnar_without_reestimation, log(quotes_bitcoin)))
-print(performance_1996_without)
+#print(performance_1996_without)
 
 
 
@@ -225,7 +228,7 @@ print(performance_1996_without)
 performance_1996_with <- data.frame()
 performance_1996_with <- performance_data(performance_1996_with,"ARIMA", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$arima_with_reestimation, log(quotes_bitcoin)))
 performance_1996_with <- performance_data(performance_1996_with,"NNAR", "15/05/2013~04/10/2018", accuracy(df_1966_days_forecasted$nnar_with_reestimation, log(quotes_bitcoin)))
-print(performance_1996_with)
+#print(performance_1996_with)
 
 
 ggplot(data = df_466_days_forecasted, aes(x = date), type='h') +
@@ -255,12 +258,12 @@ ggplot(data = df_466_days_forecasted, aes(x = date), type='h') +
 performance_466_without <- data.frame()
 performance_466_without <- performance_data(performance_466_without,"ARIMA (4,1,1)", "26/06/2017~04/10/2018", accuracy(df_466_days_forecasted$arima_without_reestimation, log(quotes_bitcoin)))
 performance_466_without <- performance_data(performance_466_without,"NNAR (1,2)", "26/06/2017~04/10/2018", accuracy(df_466_days_forecasted$nnar_without_reestimation, log(quotes_bitcoin)))
-print(performance_466_without)
+#print(performance_466_without)
 
 performance_466_with <- data.frame()
 performance_466_with <- performance_data(performance_466_with,"ARIMA (4,1,1)", "26/06/2017~04/10/2018", accuracy(df_466_days_forecasted$arima_with_reestimation, log(quotes_bitcoin)))
 performance_466_with <- performance_data(performance_466_with,"NNAR (1,2)", "26/06/2017~04/10/2018", accuracy(df_466_days_forecasted$nnar_with_reestimation, log(quotes_bitcoin)))
-print(performance_466_with)
+#print(performance_466_with)
 
 
 ######## Table 3 details end here
@@ -279,7 +282,7 @@ perf_compared_1966 <- performance_compared_data(perf_compared_1966, "ARIMA (re-e
 
 dm_result_nnar_with_without_reestimated_1966 <- dm.test(df_1966_days_forecasted$nnar_with_reestimation, df_1966_days_forecasted$nnar_without_reestimation, alternative = "two.sided", h = 1, power = 2)
 perf_compared_1966 <- performance_compared_data(perf_compared_1966, "NNAR (re-estimation) vs. NNAR (without re-estimation)", dm_result_nnar_with_without_reestimated_1966)
-print(perf_compared_1966)
+#print(perf_compared_1966)
 
 #Second test-sample window (466 days)
 perf_compared_466 <- data.frame()
@@ -294,7 +297,7 @@ perf_compared_466 <- performance_compared_data(perf_compared_466, "ARIMA (re-est
 
 dm_result_nnar_with_without_reestimated_466 <- dm.test(df_466_days_forecasted$nnar_with_reestimation, df_466_days_forecasted$nnar_without_reestimation, alternative = "two.sided", h = 1, power = 2)
 perf_compared_466 <- performance_compared_data(perf_compared_466, "NNAR (re-estimation) vs. NNAR (without re-estimation)", dm_result_nnar_with_without_reestimated_466)
-print(perf_compared_466)
+#print(perf_compared_466)
 ######## Table 4 details end here
 
 options(scipen=999)

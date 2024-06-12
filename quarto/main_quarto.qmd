@@ -41,6 +41,8 @@ Abstract: This study analyzes forecasts of Bitcoin price using the autoregressiv
 
 # Code setup
 
+*Link to code repo* [Github](https://github.com/bahadurvikram/RR2024PROJECT)
+
 **Required libraries**
 
 ```{r cache = F}
@@ -139,7 +141,8 @@ tibble(df = quotes_bitcoin) %>%
     caption = "source: RR 2024",
     x="",
     y=""
-  )
+  ) +
+  theme(panel.background = element_rect(fill = "transparent",color = "black",linewidth = 2))
 ```
 
 ### Plotting Log Transformed Bitcoin Price
@@ -156,7 +159,8 @@ tibble(df = quotes_bitcoin) %>%
     caption = "source: RR 2024",
     x="",
     y=""
-  )
+  ) + 
+  theme(panel.background = element_rect(fill = "transparent",color = "black",linewidth = 2))
 ```
 
 ### Plotting 1st Difference Log Operator
@@ -173,7 +177,8 @@ tibble(df = quotes_bitcoin) %>%
     caption = "source: RR 2024",
     x="",
     y=""
-  )
+  ) +
+  theme(panel.background = element_rect(fill = "transparent",color = "black",linewidth = 2))
 ```
 
 ```{r echo=FALSE}
@@ -315,7 +320,7 @@ performance_1996_without <- performance_data(performance_1996_without,"NNAR (2,1
 
 ```
 
-### (c) Actual and forecasted Bitcoin price (training sample:2000 days, test-sample:466 days)
+## (c) Actual and forecasted Bitcoin price (training sample:2000 days, test-sample:466 days)
 
 ```{r echo=FALSE}
 performance_1996_with <- data.frame()
@@ -334,7 +339,7 @@ ggplot(data = df_466_days_forecasted, aes(x = date), type='h') +
        x ="", y = "") + theme(legend.position = "bottom")
 ```
 
-### (d) Concentrated view on the forecast period (test-sample:466 days)
+## (d) Concentrated view on the forecast period (test-sample:466 days)
 
 ```{r echo=FALSE}
 ggplot(data = df_466_days_forecasted, aes(x = date), type='h') +
@@ -363,7 +368,9 @@ performance_466_with <- performance_data(performance_466_with,"NNAR (1,2)", "26/
 
 # Table 3. Test-sample static forecast performance.
 
-### First test-sample window (1966 days) Forecast without re-estimation at each step
+## First test sample
+
+#### First test-sample window (1966 days) Forecast without re-estimation at each step
 
 ```{r echo=FALSE}
 performance_1996_without
@@ -375,7 +382,9 @@ performance_1996_without
 performance_1996_with
 ```
 
-### Second test-sample window (466 days) Forecast without re-estimation at each step
+## Second test sample
+
+#### Second test-sample window (466 days) Forecast without re-estimation at each step
 
 ```{r echo=FALSE}
 performance_466_without
@@ -407,7 +416,7 @@ perf_compared_1966 <- performance_compared_data(perf_compared_1966, "NNAR (re-es
 
 # Table 4. DM test of forecast results.
 
-### First test-sample window (1966 days)
+## First test-sample window (1966 days)
 
 ```{r echo=FALSE}
 perf_compared_1966
@@ -417,7 +426,7 @@ perf_compared_1966
 ######## Table 4 details end here
 ```
 
-### Second test-sample window (466 days)
+## Second test-sample window (466 days)
 
 ```{r echo=FALSE}
 #perf_compared_466
@@ -458,7 +467,9 @@ Box.test(et411, lag = 8, type = c("Box-Pierce", "Ljung-Box"), fitdf = 5)
 gghistogram(et411)
 ```
 
-### Proposed improved solution for ARIMA models (6,1,1) for 500 training data set
+# Conclusion
+
+#### Proposed improved solution for 500 training data set - ARIMA models (6,1,1)
 
 ```{r echo=FALSE}
 modelarima611 = arima(log_transformed_500, order = c(6,1,1))
@@ -471,7 +482,7 @@ gghistogram(et611)
 accuracy(modelarima611)
 ```
 
-### Proposed improved solution for ARIMA models (5,1,1) for 2000 training data set
+#### Proposed improved solution for 2000 training data set - ARIMA models (5,1,1)
 
 ```{r echo=FALSE}
 modelarima510 = arima(log_transformed_2000, order = c(5,1,0))
